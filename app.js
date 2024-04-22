@@ -1,6 +1,5 @@
 const express = require("express");
 const axios = require("axios")
-const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const markdownIt = require('markdown-it')
@@ -8,17 +7,28 @@ const markdownIt = require('markdown-it')
 const md = markdownIt()
 const app = express();
 
-// Função para iniciar o navegador se ainda não estiver iniciado
+let chrome = {};
+let puppeteer;
+
+if (process.env.VERCEL) {
+  chromium = require('chrome-aws-lambda');
+  puppeteer = require('puppeteer-core');
+} else {
+  puppeteer = require('puppeteer');
+}
+
 async function getBrowserInstance() {
     let browser;
 
     if (process.env.VERCEL) {
-        // Em um ambiente Vercel
-        browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
+        browser = await await chromium.puppeteer.launch({
+			args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
+			defaultViewport: chromium.defaultViewport,
+			executablePath: await chromium.executablePath,
+			headless: true,
+			ignoreHTTPSErrors: true,
+		  })
     } else {
-        // Em um ambiente local
         browser = await puppeteer.launch({
             headless: true,
         });
@@ -58,7 +68,6 @@ const respond = function (res, data, opts) {
 };
 
 app.get("/", async function (_, res) {
-    // Ler o conteúdo do arquivo README.md
     const readmePath = path.join(__dirname, 'README.md');
     
     fs.readFile(readmePath, 'utf-8', (err, data) => {
@@ -67,10 +76,8 @@ app.get("/", async function (_, res) {
             return res.status(500).send('Erro interno do servidor');
         }
 
-        // Converter o conteúdo Markdown para HTML
         const htmlContent = md.render(data);
 
-        // Enviar o HTML com o CSS do github-markdown-css como resposta
         res.send(`
             <!DOCTYPE html>
             <html lang="en">
@@ -150,11 +157,9 @@ app.get("/proxy", async function (req, res) {
 });
 
 function transformHeaders(headers) {
-    // Transforma os headers recebidos em um formato que o Axios aceite
     const transformedHeaders = {};
 
     for (const key in headers) {
-        // Ignora headers específicos que não são necessários ou podem causar problemas
         if (key.toLowerCase() !== 'host' && key.toLowerCase() !== 'connection') {
             transformedHeaders[key] = headers[key];
         }
