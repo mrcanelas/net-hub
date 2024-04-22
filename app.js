@@ -10,24 +10,21 @@ const md = markdownIt()
 const app = express();
 
 async function getBrowser() {
-	let browser;
 	if (process.env.VERCEL) {
-		browser = await puppeteer.launch({
+		return puppeteer.launch({
 			args: chromium.args,
 			defaultViewport: chromium.defaultViewport,
 			executablePath: await chromium.executablePath(
-				"https://github.com/Sparticuz/chromium/releases/download/v110.0.1/chromium-v110.0.1-pack.tar"
+			  "https://github.com/Sparticuz/chromium/releases/download/v110.0.1/chromium-v110.0.1-pack.tar"
 			),
 			headless: chromium.headless,
 			ignoreHTTPSErrors: true,
-		});
+		  });
 	} else {
-		browser = await puppeteer.launch({
-			headless: true,
-		});
+		return puppeteer.launch({
+            headless: true,
+        });
 	}
-
-	return browser;
 }
 
 const getCacheHeaders = function (opts) {
