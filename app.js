@@ -2,6 +2,9 @@ const express = require("express");
 const axios = require("axios")
 const puppeteer = require('puppeteer');
 const app = express();
+const fs = require('fs');
+const path = require('path');
+const markdownIt = require('markdown-it')();
 
 let browserInstance = null;
 
@@ -46,7 +49,32 @@ const respond = function (res, data, opts) {
 };
 
 app.get("/", async function (_, res) {
-	res.redirect("/configure");
+    // Ler o conteúdo do arquivo README.md
+    const readmePath = path.join(__dirname, 'README.md');
+    
+    fs.readFile(readmePath, 'utf-8', (err, data) => {
+        if (err) {
+            console.error('Erro ao ler o arquivo README.md:', err);
+            return res.status(500).send('Erro interno do servidor');
+        }
+
+        // Converter o conteúdo Markdown para HTML
+        const htmlContent = markdownIt.render(data);
+
+        // Enviar o HTML como resposta
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>NetHub README</title>
+            </head>
+            <body>
+                ${htmlContent}
+            </body>
+            </html>
+        `);
+    });
 });
 
 app.get("/sniffer", async function (req, res) {
