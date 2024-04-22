@@ -8,17 +8,23 @@ const markdownIt = require('markdown-it')
 const md = markdownIt()
 const app = express();
 
-
-let browserInstance = null;
-
 // Função para iniciar o navegador se ainda não estiver iniciado
 async function getBrowserInstance() {
-	if (!browserInstance) {
-		browserInstance = await puppeteer.launch({
-			headless: true, // Para manter o navegador visível
-		});
-	}
-	return browserInstance;
+    let browser;
+
+    if (process.env.VERCEL) {
+        // Em um ambiente Vercel
+        browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+    } else {
+        // Em um ambiente local
+        browser = await puppeteer.launch({
+            headless: true,
+        });
+    }
+
+    return browser;
 }
 
 const getCacheHeaders = function (opts) {
