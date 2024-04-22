@@ -1,10 +1,13 @@
 const express = require("express");
 const axios = require("axios")
 const puppeteer = require('puppeteer');
-const app = express();
 const fs = require('fs');
 const path = require('path');
-const markdownIt = require('markdown-it')();
+const markdownIt = require('markdown-it')
+
+const md = markdownIt()
+const app = express();
+
 
 let browserInstance = null;
 
@@ -59,17 +62,34 @@ app.get("/", async function (_, res) {
         }
 
         // Converter o conteúdo Markdown para HTML
-        const htmlContent = markdownIt.render(data);
+        const htmlContent = md.render(data);
 
-        // Enviar o HTML como resposta
+        // Enviar o HTML com o CSS do github-markdown-css como resposta
         res.send(`
             <!DOCTYPE html>
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
                 <title>NetHub README</title>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css">
+                <style>
+                    body {
+                        box-sizing: border-box;
+                        min-width: 200px;
+                        max-width: 980px;
+                        margin: 0 auto;
+                        padding: 45px;
+                    }
+                    .markdown-body {
+                        box-sizing: border-box;
+                        min-width: 200px;
+                        max-width: 980px;
+                        margin: 0 auto;
+                        padding: 45px;
+                    }
+                </style>
             </head>
-            <body>
+            <body class="markdown-body">
                 ${htmlContent}
             </body>
             </html>
