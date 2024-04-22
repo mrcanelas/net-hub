@@ -1,5 +1,7 @@
 const express = require("express");
 const axios = require("axios")
+const puppeteer = process.env.VERCEL ? require('puppeteer-core') : require('puppeteer');
+const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 const path = require('path');
 const markdownIt = require('markdown-it')
@@ -7,34 +9,20 @@ const markdownIt = require('markdown-it')
 const md = markdownIt()
 const app = express();
 
-let chromium = {};
-let puppeteer;
-
-if (process.env.VERCEL) {
-  chromium = require('chrome-aws-lambda');
-  puppeteer = require('puppeteer-core');
-} else {
-  puppeteer = require('puppeteer');
-}
-
-async function getBrowserInstance() {
-    let browser;
-
+async function getBrowser() {
     if (process.env.VERCEL) {
-        browser = await chromium.puppeteer.launch({
-			args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
-			defaultViewport: chromium.defaultViewport,
-			executablePath: await chromium.executablePath,
-			headless: true,
-			ignoreHTTPSErrors: true,
-		  })
-    } else {
-        browser = await puppeteer.launch({
-            headless: true,
+        return puppeteer.launch({
+            args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
+            defaultViewport: chromium.defaultViewport,
+            executablePath: await chromium.executablePath("https://github.com/Sparticuz/chromium/releases/download/v116.0.0/chromium-v116.0.0-pack.tar"),
+            headless: "new",
+            ignoreHTTPSErrors: true,
         });
     }
 
-    return browser;
+	return puppeteer.launch({
+		headless: true,
+	});
 }
 
 const getCacheHeaders = function (opts) {
@@ -117,7 +105,7 @@ app.get("/sniffer", async function (req, res) {
 		return res.status(400).json({ error: 'URL parameter is required' });
 	}
 
-	const browser = await getBrowserInstance();
+	const browser = await getBrowser();
 	const page = await browser.newPage();
 
 	await page.setRequestInterception(true);
