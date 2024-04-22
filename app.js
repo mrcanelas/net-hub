@@ -7,7 +7,7 @@ const markdownIt = require('markdown-it')
 const md = markdownIt()
 const app = express();
 
-let chrome = {};
+let chromium = {};
 let puppeteer;
 
 if (process.env.VERCEL) {
@@ -21,7 +21,7 @@ async function getBrowserInstance() {
     let browser;
 
     if (process.env.VERCEL) {
-        browser = await await chromium.puppeteer.launch({
+        browser = await chromium.puppeteer.launch({
 			args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
 			defaultViewport: chromium.defaultViewport,
 			executablePath: await chromium.executablePath,
