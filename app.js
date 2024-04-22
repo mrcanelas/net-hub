@@ -132,7 +132,7 @@ app.get("/sniffer", async function (req, res) {
 			await browser.close();
 		}
 		console.error('Error navigating to the URL:', error);
-		return res.status(500).json({ error: 'Error navigating to the URL' });
+		return res.status(500).json({ error: 'Error navigating to the URL', error, env: process.env.VERCEL });
 	}
 });
 
