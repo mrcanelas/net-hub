@@ -15,15 +15,15 @@ async function getBrowser() {
 			args: chromium.args,
 			defaultViewport: chromium.defaultViewport,
 			executablePath: await chromium.executablePath(
-			  "https://github.com/Sparticuz/chromium/releases/download/v110.0.1/chromium-v110.0.1-pack.tar"
+				"https://github.com/Sparticuz/chromium/releases/download/v110.0.1/chromium-v110.0.1-pack.tar"
 			),
 			headless: chromium.headless,
 			ignoreHTTPSErrors: true,
-		  });
+		});
 	} else {
 		return puppeteer.launch({
-            headless: true,
-        });
+			headless: true,
+		});
 	}
 }
 
@@ -107,30 +107,33 @@ app.get("/sniffer", async function (req, res) {
 		return res.status(400).json({ error: 'URL parameter is required' });
 	}
 
-	const browser = await getBrowser();
-	const page = await browser.newPage();
+	let browser;
+	try {
+		browser = await getBrowser();
+		const page = await browser.newPage();
 
-	await page.setRequestInterception(true);
-	await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36');
-	await page.setViewport({ width: 1366, height: 768 });
+		await page.setRequestInterception(true);
+		await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36');
+		await page.setViewport({ width: 1366, height: 768 });
 
-	const requests = [];
-	page.on('request', (request) => {
-		requests.push(request.url());
-		request.continue();
-	});
+		const requests = [];
+		page.on('request', (request) => {
+			requests.push(request.url());
+			request.continue();
+		});
 
-	await page.goto(url, { waitUntil: 'networkidle2' });
+		await page.goto(url, { waitUntil: 'networkidle2' });
 
-	await page.close();
+		await page.close();
 
-	const cacheOpts = {
-		cacheMaxAge: 7 * 24 * 60 * 60, // 7 days
-		staleRevalidate: 14 * 24 * 60 * 60, // 14 days
-		staleError: 30 * 24 * 60 * 60, // 30 days
-	};
-
-	respond(res, requests, cacheOpts)
+		res.json(requests);
+	} catch (error) {
+		if (browser) {
+			await browser.close();
+		}
+		console.error('Error navigating to the URL:', error);
+		return res.status(500).json({ error: 'Error navigating to the URL' });
+	}
 });
 
 app.get("/proxy", async function (req, res) {
