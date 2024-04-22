@@ -85,7 +85,6 @@ app.get("/sniffer", async function (req, res) {
 app.get("/proxy", async function (req, res) {
 	const url = req.query.url
 	const headers = transformHeaders(req.headers);
-	console.log(headers)
 
 	axios.get(url, { headers })
 		.then(response => {
