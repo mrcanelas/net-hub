@@ -1,7 +1,7 @@
 const express = require("express");
 const axios = require("axios")
 const puppeteer = process.env.VERCEL ? require('puppeteer-core') : require('puppeteer');
-const chromium = require('@sparticuz/chromium');
+const chromium = require('@sparticuz/chromium-min');
 const fs = require('fs');
 const path = require('path');
 const markdownIt = require('markdown-it')
@@ -10,19 +10,24 @@ const md = markdownIt()
 const app = express();
 
 async function getBrowser() {
-    if (process.env.VERCEL) {
-        return puppeteer.launch({
-            args: [...chromium.args, "--hide-scrollbars", "--disable-web-security"],
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath("https://github.com/Sparticuz/chromium/releases/download/v116.0.0/chromium-v116.0.0-pack.tar"),
-            headless: "new",
-            ignoreHTTPSErrors: true,
-        });
-    }
+	let browser;
+	if (process.env.VERCEL) {
+		browser = await puppeteer.launch({
+			args: chromium.args,
+			defaultViewport: chromium.defaultViewport,
+			executablePath: await chromium.executablePath(
+				"https://github.com/Sparticuz/chromium/releases/download/v110.0.1/chromium-v110.0.1-pack.tar"
+			),
+			headless: chromium.headless,
+			ignoreHTTPSErrors: true,
+		});
+	} else {
+		browser = await puppeteer.launch({
+			headless: true,
+		});
+	}
 
-	return puppeteer.launch({
-		headless: true,
-	});
+	return browser;
 }
 
 const getCacheHeaders = function (opts) {
@@ -56,17 +61,17 @@ const respond = function (res, data, opts) {
 };
 
 app.get("/", async function (_, res) {
-    const readmePath = path.join(__dirname, 'README.md');
-    
-    fs.readFile(readmePath, 'utf-8', (err, data) => {
-        if (err) {
-            console.error('Erro ao ler o arquivo README.md:', err);
-            return res.status(500).send('Erro interno do servidor');
-        }
+	const readmePath = path.join(__dirname, 'README.md');
 
-        const htmlContent = md.render(data);
+	fs.readFile(readmePath, 'utf-8', (err, data) => {
+		if (err) {
+			console.error('Erro ao ler o arquivo README.md:', err);
+			return res.status(500).send('Erro interno do servidor');
+		}
 
-        res.send(`
+		const htmlContent = md.render(data);
+
+		res.send(`
             <!DOCTYPE html>
             <html lang="en">
             <head>
@@ -95,7 +100,7 @@ app.get("/", async function (_, res) {
             </body>
             </html>
         `);
-    });
+	});
 });
 
 app.get("/sniffer", async function (req, res) {
@@ -145,15 +150,15 @@ app.get("/proxy", async function (req, res) {
 });
 
 function transformHeaders(headers) {
-    const transformedHeaders = {};
+	const transformedHeaders = {};
 
-    for (const key in headers) {
-        if (key.toLowerCase() !== 'host' && key.toLowerCase() !== 'connection') {
-            transformedHeaders[key] = headers[key];
-        }
-    }
+	for (const key in headers) {
+		if (key.toLowerCase() !== 'host' && key.toLowerCase() !== 'connection') {
+			transformedHeaders[key] = headers[key];
+		}
+	}
 
-    return transformedHeaders;
+	return transformedHeaders;
 }
 
 module.exports = app;
