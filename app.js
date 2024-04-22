@@ -1,7 +1,5 @@
 const express = require("express");
 const axios = require("axios")
-const puppeteer = process.env.VERCEL ? require('puppeteer-core') : require('puppeteer');
-const chromium = require('@sparticuz/chromium-min');
 const fs = require('fs');
 const path = require('path');
 const markdownIt = require('markdown-it')
@@ -10,52 +8,26 @@ const md = markdownIt()
 const app = express();
 
 async function getBrowser() {
+	let browser
+
 	if (process.env.VERCEL) {
-		return puppeteer.launch({
+		const chromium = require('@sparticuz/chromium')
+		// Optional: If you'd like to disable webgl, true is the default.
+		chromium.setGraphicsMode = false
+		const puppeteer = require('puppeteer-core')
+		browser = await puppeteer.launch({
 			args: chromium.args,
 			defaultViewport: chromium.defaultViewport,
-			executablePath: await chromium.executablePath(
-				"https://github.com/Sparticuz/chromium/releases/download/v110.0.1/chromium-v110.0.1-pack.tar"
-			),
+			executablePath: await chromium.executablePath(),
 			headless: chromium.headless,
-			ignoreHTTPSErrors: true,
-		});
-	} else {
-		return puppeteer.launch({
-			headless: true,
-		});
-	}
-}
-
-const getCacheHeaders = function (opts) {
-	opts = opts || {};
-
-	if (!Object.keys(opts).length) return false;
-
-	let cacheHeaders = {
-		cacheMaxAge: "max-age",
-		staleRevalidate: "stale-while-revalidate",
-		staleError: "stale-if-error",
-	};
-
-	return Object.keys(cacheHeaders)
-		.map((prop) => {
-			const value = opts[prop];
-			if (!value) return false;
-			return cacheHeaders[prop] + "=" + value;
 		})
-		.filter((val) => !!val)
-		.join(", ");
-};
+	} else {
+		const puppeteer = require('puppeteer')
+		browser = await puppeteer.launch({ headless: "new" })
+	}
 
-const respond = function (res, data, opts) {
-	const cacheControl = getCacheHeaders(opts);
-	if (cacheControl) res.setHeader("Cache-Control", `${cacheControl}, public`);
-	res.setHeader("Access-Control-Allow-Origin", "*");
-	res.setHeader("Access-Control-Allow-Headers", "*");
-	res.setHeader("Content-Type", "application/json");
-	res.send(data);
-};
+	return browser
+}
 
 app.get("/", async function (_, res) {
 	const readmePath = path.join(__dirname, 'README.md');
